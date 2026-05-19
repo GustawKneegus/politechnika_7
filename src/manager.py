@@ -12,6 +12,25 @@ class Manager:
        
         self.load_data()
 
+    min_transfer_amount = 0.0
+    max_transfer_amount = 10000.0
+
+    def validate_transfer_amount(self, transfer) -> list[str]:
+        errors = []
+        if transfer.amount_pln < self.min_transfer_amount:
+            errors.append(f"Kwota transferu {transfer.amount_pln} jest mniejsza od minimalnej {self.min_transfer_amount}")
+        if transfer.amount_pln > self.max_transfer_amount:
+            errors.append(f"Kwota transferu {transfer.amount_pln} przekracza maksymalną {self.max_transfer_amount}")
+        return errors
+
+    def validate_all_transfers(self) -> dict[str, list[str]]:
+        report = {}
+        for idx, transfer in enumerate(self.transfers):
+            errors = self.validate_transfer_amount(transfer)
+            if errors:
+                report[f"transfer-{idx}"] = errors
+        return report
+
     def load_data(self):
         self.apartments = Apartment.from_json_file(self.parameters.apartments_json_path)
         self.tenants = Tenant.from_json_file(self.parameters.tenants_json_path)
@@ -25,10 +44,7 @@ class Manager:
         return True
     
     def get_apartment(self, apartment_key: str) -> Apartment | None:
-        for apartment in self.apartments.values():
-            if apartment.key == apartment_key:
-                return apartment
-        return None
+        return self.apartments.get(apartment_key)
 
     def get_apartment_costs(self, apartment_key: str, year: int = None, month: int = None) -> float | None:
         if month is not None and (month < 1 or month > 12):
